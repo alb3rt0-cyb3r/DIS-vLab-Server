@@ -35,7 +35,7 @@ class Config(db.Model):
 
     @staticmethod
     def get():
-        return Confir.query.all()[0].to_dict()
+        return Config.query.all()[0].to_dict()
 
     def update(self, config):
         if 'LOCAL_QEMU_URI' in config and config['LOCAL_QEMU_URI'] != "":
