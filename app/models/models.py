@@ -33,6 +33,10 @@ class Config(db.Model):
     def is_initialized():
         return True if Config.query.all().__len__() != 0 else False
 
+    @staticmethod
+    def get():
+        return Confir.query.all()[0].to_dict()
+
     def update(self, config):
         if 'LOCAL_QEMU_URI' in config and config['LOCAL_QEMU_URI'] != "":
             self.local_qemu_uri = config['LOCAL_QEMU_URI']

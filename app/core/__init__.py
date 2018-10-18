@@ -17,3 +17,4 @@ from app.api import api
 # IMPORTANT!! Comment below lines to make database migrations and upgrades
 if not models.Config.is_initialized():
     models.Config.init()
+app.config.update(models.Config.get())
