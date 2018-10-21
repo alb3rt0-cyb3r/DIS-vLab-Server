@@ -24,7 +24,6 @@ class Config(db.Model):
             db.session.add(config)
             db.session.commit()
             app.config.update(config.to_dict())
-            print(app.config)
         except Exception as e:
             db.session.rollback()
             raise e
