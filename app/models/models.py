@@ -105,7 +105,10 @@ class Lab(db.Model):
 
     @staticmethod
     def get(lab_uuid=None):
-        return Lab.query.get(lab_uuid) if lab_uuid else Lab.query.all()
+        try:
+            return Lab.query.get(lab_uuid) if lab_uuid else Lab.query.all()
+        except Exception as e:
+            raise e
 
     def update(self, data):
         if 'code' in data and data['code'] != "":
@@ -143,8 +146,8 @@ class Lab(db.Model):
         return dict(uuid=str(self.uuid),
                     code=self.code,
                     description=self.description,
-                    start_ip_range=self.start_ip_range,
-                    end_ip_range=self.end_ip_range,
+                    start_ip_range=self.start_ip_range.compressed,
+                    end_ip_range=self.end_ip_range.compressed,
                     hosts=dict(total=self.hosts.__len__(),
                                vcpus=self.hosts_vcpus,
                                memory=self.hosts_memory,

@@ -25,6 +25,7 @@ To deploy DVLS you will need have installed CentOS 7.x Minimal installation with
 * "Virtualization Platform" (group)
 * "Virtualization Hypervisor" (group)
 * "Virtualization Tools" (group)
+* "Virtualization Client" (group)
 * "Development" (group)
 * "libvirt-devel.x86_64"
 * "libguestfs-tools"

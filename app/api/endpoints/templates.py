@@ -1,5 +1,7 @@
 import subprocess
 import paramiko
+import libvirt
+import pickle
 from app.api.utils import *
 from app.models import *
 from app.core import app
@@ -81,8 +83,14 @@ def create_template(cu):
 @app.route('/api/templates', methods=['GET'])
 @token_required
 def get_templates(cu):
-    templates = Template.get()
-    return json_response([t.to_dict() for t in templates], 200)
+    try:
+        templates = Template.get()
+        msg = [t.to_dict() for t in templates]
+        code = 200
+    except Exception as e:
+        msg = 'Ha ocurrido un error al obtener las plantillas - ' + str(e)
+        code = 500
+    return json_response(msg, code)
 
 
 # (U) Update a template
@@ -97,12 +105,10 @@ def update_template(cu, template_uuid):
 @app.route('/api/templates/<template_uuid>', methods=['DELETE'])
 @token_required
 def delete_template(cu, template_uuid):
-    template = Template.get(template_uuid).to_dict()
+    template = Template.get(template_uuid)
 
-    # for image_path in template['images_path']:
-    for image_path in template.images_path:
+    for image_path in pickle.loads(template.images_path):
         subprocess.check_call(['rm', '-f',  image_path])
-    # subprocess.check_call(['rm', '-f', template['xml_path']])
     subprocess.check_call(['rm', '-f', template.xml_path])
     Template.delete(template)
     return json_response('Plantilla eliminada correctamente', 200)
@@ -114,34 +120,40 @@ def delete_template(cu, template_uuid):
 def clone_template(cu, template_uuid):
     # TODO - Add optional params to virt-clone (?)
     # TODO - Check if lab or localhost deployment
-    template = Template.get(template_uuid).to_dict()
-    domain_name = request.json['domain_name']
-    lab_uuid = request.json['lab_uuid']
-    hosts = (Lab.get(lab_uuid)).hosts
+    try:
+        template = Template.get(template_uuid).to_dict()
+        domain_name = request.json['domain_name']
+        lab_uuid = request.json['lab_uuid']
+        hosts = (Lab.get(lab_uuid)).hosts
 
-    cmd = ['virt-clone',
-           '--connect', app.config['LOCAL_QEMU_URI'],
-           '--original-xml', template['xml_path'],
-           '--name', domain_name]
+        cmd = ['virt-clone',
+               '--connect', app.config['LOCAL_QEMU_URI'],
+               '--original-xml', template['xml_path'],
+               '--name', domain_name]
 
-    for count in range(template['images_path'].__len__()):
-        cmd.append('--file')
-        cmd.append(app.config['DOMAIN_IMAGES_DIR'] + domain_name + '-disk' + str(count) + '.qcow2')
+        for count in range(template['images_path'].__len__()):
+            cmd.append('--file')
+            cmd.append(app.config['DOMAIN_IMAGES_DIR'] + domain_name + '-disk' + str(count) + '.qcow2')
 
-    ssh = paramiko.SSHClient()
-    # Surrounds 'known_hosts' error
-    ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-    for h in hosts:
-        host = h.ip_addr
-        username = h.conn_user
-        # NO PASSWORD!! Server SSH key is previously distributed among lab PCs
-        try:
-            ssh.connect(host, username=username)
-            ssh_stdin, ssh_stdout, ssh_stderr = ssh.exec_command(' '.join(cmd))
-            msg = 'virt-clone llamado correctamente'
-            code = 200
-        except paramiko.ssh_exception.AuthenticationException as e:
-            msg = 'Ha ocurrido un error al llamar a virt-clone: '+str(e)
-            code = 500
-
+        ssh = paramiko.SSHClient()
+        # Surrounds 'known_hosts' error
+        ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+        for h in hosts:
+            host = h.ip_addr
+            username = h.conn_user
+            # NO PASSWORD!! Server SSH key is previously distributed among lab PCs
+            try:
+                ssh.connect(host, username=username)
+                ssh_stdin, ssh_stdout, ssh_stderr = ssh.exec_command(' '.join(cmd))
+                msg = 'virt-clone llamado correctamente'
+                code = 200
+            except paramiko.ssh_exception.AuthenticationException as e:
+                msg = 'Ha ocurrido un error al llamar a virt-clone: '+str(e)
+                code = 500
+            return json_response(msg, code)
+        msg = 'El laboratorio no tiene ningún host asociado'
+        code = 401
+    except Exception as e:
+        msg = 'Ha ocurrido un error inesperado - ' + str(e)
+        code = 500
     return json_response(msg, code)

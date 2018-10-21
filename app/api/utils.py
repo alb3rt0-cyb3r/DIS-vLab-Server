@@ -39,7 +39,7 @@ def token_required(f):
         if 'JWT-Token' in request.headers:
             token = request.headers['JWT-Token']
             if not token:
-                return json_response(dict(type='danger', message='Cannot find the token!'), 401)
+                return json_response('No se ha encontrado un token de sesión', 401)
         try:
             data = jwt.decode(token, app.config['SECRET_KEY'])
             current_user = data['username']
@@ -47,6 +47,6 @@ def token_required(f):
             exc_type, exc_obj, exc_tb = sys.exc_info()
             fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
             print(exc_type, fname, exc_tb.tb_lineno)
-            return json_response(dict(type='danger', message='The token is invalid!'), 401)
+            return json_response('El token no es válido', 401)
         return f(current_user, *args, **kwargs)
     return decorated

@@ -13,8 +13,8 @@ def login():
         return json_response('Inicio de sesión fallido, no se ha proporcionado las credenciales de autenticación.', 401)
 
     p = pam.pam()
-    # user = p.authenticate(username=auth.username, password=auth.password, service='dvls')
-    user = p.authenticate(username=auth.username, password=auth.password)
+    user = p.authenticate(username=auth.username, password=auth.password, service='dvls')
+    # user = p.authenticate(username=auth.username, password=auth.password)
 
     if user and (auth.username == app.config['CONN_USER']):
         token = jwt.encode(dict(username=auth.username, exp=datetime.utcnow() + timedelta(minutes=60)),

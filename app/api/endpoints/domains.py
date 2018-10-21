@@ -11,42 +11,41 @@ import time
 
 
 # (C) Create new domain using virt-install
-@app.route('/api/domains?installer=<installation_type>', methods=['POST'])
+@app.route('/api/domains', methods=['POST'])
 @token_required
-def create_domain(cu, installation_type):
+def create_domain(cu):
     try:
         data = request.json
         cmd = ['virt-install',
-               '--name', data['name'],
-               '--memory', data['memory'],
-               '--vcpus', data['vcpus'],
-               '--os-variant', data['os-variant']]
+               '--name', str(data['name']),
+               '--memory', str(data['memory']),
+               '--vcpus', str(data['vcpus']),
+               '--os-variant', str(data['os_variant'])]
         if data['graphics']['vnc']:
-            cmd.append(['--graphics vnc,password=', data['graphics']['password']])
+            cmd.append('--graphics vnc,password='+str(data['graphics']['password']))
 
-        if installation_type == "iso_image":
-            cmd.append(['--disk', 'size='+data['disk']['size'],
-                        '--cdrom', data['cdrom']])
-        elif installation_type == "import":
-            cmd.append(['--disk', data['disk'],
-                        '--import'])
-        elif installation_type == "network":
-            cmd.append(['--disk', 'size=' + data['disk']['size'],
-                        '--location', data['location']])
-        elif installation_type == "pxe":
-            cmd.append(['--disk', 'size=' + data['disk']['size'],
-                        '--network', data['network'],
-                        '--pxe'])
+        if data['installation_type'] == "iso":
+            cmd.append('--disk size='+str(data['disk']['size']))
+            cmd.append('--cdrom '+str(data['cdrom']))
+        elif data['installation_type'] == "image":
+            cmd.append('--disk '+str(data['disk']['path']))
+            cmd.append('--import')
+        elif data['installation_type'] == "network":
+            cmd.append('--disk size='+str(data['disk']['size']))
+            cmd.append('--location '+str(data['location']))
+        elif data['installation_type'] == "pxe":
+            cmd.append('--disk size='+str(data['disk']['size']))
+            cmd.append('--network '+str(data['network']))
+            cmd.append('--pxe')
         else:
             msg = "El tipo de instalación no es correcto"
             code = 422
             return json_response(msg, code)
-
         subprocess.check_call(cmd)
         msg = "La orden se ha ejecutado correctamente"
         code = 200
-    except Exception:
-        msg = "Ha ocurrido un error inesperado"
+    except Exception as e:
+        msg = "Ha ocurrido un error inesperado - " + str(e)
         code = 500
 
     return json_response(msg, code)
@@ -85,8 +84,8 @@ def get_all_domains(cu, conn=None):
         conn.close()
         msg = domains_dict
         code = 200
-    except Exception as ex:
-        msg = "Error al obtener los dominios"
+    except Exception as e:
+        msg = "Ha ocurrido un error al obtener los dominios - " + str(e)
         code = 500
 
     return json_response(msg, code)
@@ -109,7 +108,8 @@ def update_domain(cu, domain_name):
 @app.route('/api/domains/<domain_uuid>', methods=['DELETE'])
 @token_required
 def delete_domain(cu, domain_uuid):
-    delete_disks = request.json['delete_disks']
+    delete_disks = True
+    # delete_disks = request.json['delete_disks']
     conn = libvirt.open(app.config['LOCAL_QEMU_URI'])
     domain = conn.lookupByUUIDString(domain_uuid)
     if delete_disks:
