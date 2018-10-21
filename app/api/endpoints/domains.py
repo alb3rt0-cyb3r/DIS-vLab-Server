@@ -17,25 +17,32 @@ def create_domain(cu):
     try:
         data = request.json
         cmd = ['virt-install',
-               '--name', str(data['name']),
+               '--name', data['name'],
                '--memory', str(data['memory']),
                '--vcpus', str(data['vcpus']),
-               '--os-variant', str(data['os_variant'])]
+               '--os-variant', data['os_variant']]
         if data['graphics']['vnc']:
-            cmd.append('--graphics vnc,password='+str(data['graphics']['password']))
-
+            cmd.append('--graphics')
+            cmd.append('vnc,listen='+data['graphics']['listen']+',password='+data['graphics']['password'])
         if data['installation_type'] == "iso":
-            cmd.append('--disk size='+str(data['disk']['size']))
-            cmd.append('--cdrom '+str(data['cdrom']))
+            cmd.append('--disk')
+            cmd.append('size='+str(data['disk']['size']))
+            cmd.append('--cdrom')
+            cmd.append(data['cdrom'])
         elif data['installation_type'] == "image":
-            cmd.append('--disk '+str(data['disk']['path']))
+            cmd.append('--disk')
+            cmd.append(data['disk']['path'])
             cmd.append('--import')
         elif data['installation_type'] == "network":
-            cmd.append('--disk size='+str(data['disk']['size']))
-            cmd.append('--location '+str(data['location']))
+            cmd.append('--disk')
+            cmd.append('size='+str(data['disk']['size']))
+            cmd.append('--location')
+            cmd.append(data['location'])
         elif data['installation_type'] == "pxe":
-            cmd.append('--disk size='+str(data['disk']['size']))
-            cmd.append('--network '+str(data['network']))
+            cmd.append('--disk')
+            cmd.append('size='+str(data['disk']['size']))
+            cmd.append('--network')
+            cmd.append(data['network'])
             cmd.append('--pxe')
         else:
             msg = "El tipo de instalación no es correcto"
@@ -47,7 +54,6 @@ def create_domain(cu):
     except Exception as e:
         msg = "Ha ocurrido un error inesperado - " + str(e)
         code = 500
-
     return json_response(msg, code)
 
 
