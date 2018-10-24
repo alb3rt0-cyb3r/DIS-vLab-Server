@@ -12,17 +12,43 @@ from app.core import app
 @app.route('/api/labs', methods=['POST'])
 @token_required
 def create_lab(cu):
-    # TODO - Add hosts based on IP range
+    # 1) Create a Lab
+    # 2) Create and add Hosts
     try:
-        Lab.create(request.json)
+        lab = Lab.create(request.json)
         msg = "Laboratorio añadido correctamente"
         code = 200
-    except KeyError:
-        msg = "Ha ocurrido un error al añadir el laboratorio - Faltan parámetros"
-        code = 400
-    except IntegrityError:
-        msg = "Ha ocurrido un error al añadir el laboratorio - Se ha violado una restricción de integridad"
-        code = 400
+    except Exception as e:
+        if isinstance(e, KeyError):
+            msg = "Ha ocurrido un error al añadir el laboratorio - Faltan parámetros"
+            code = 400
+        elif isinstance(e, IntegrityError):
+            msg = "Ha ocurrido un error al añadir el laboratorio - Se ha violado una restricción de integridad"
+            code = 400
+        else:
+            msg = "Ha ocurrido un error al añadir el laboratorio - " + str(e)
+            code = 500
+        return json_response(msg, code)
+
+    try:
+        ip_range = ip_range_to_list(lab.start_ip_range, lab.end_ip_range)
+        for ip in ip_range:
+            data = dict(code=lab.code+'_'+str(ip_range.index(ip)),
+                        ip_address=ip,
+                        conn_user='root',
+                        lab_uuid=lab.uuid)
+            Host.create(data)
+    except Exception as e:
+        if isinstance(e, KeyError):
+            msg = "Ha ocurrido un error al añadir un host al laboratorio "+lab.code+" - Faltan parámetros"
+            code = 400
+        elif isinstance(e, IntegrityError):
+            msg = "Ha ocurrido un error al añadir un host al laboratorio "+lab.code+" - Se ha violado una " \
+                                                                                    "restricción de integridad"
+            code = 400
+        else:
+            msg = "Ha ocurrido un error al añadir un host al laboratorio "+lab.code+" - " + str(e)
+            code = 500
     return json_response(msg, code)
 
 

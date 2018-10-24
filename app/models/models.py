@@ -3,6 +3,7 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy_utils import UUIDType, IPAddressType
 from datetime import datetime
 from app.core import app, db
+import ipaddress
 import pickle
 import uuid
 
@@ -83,8 +84,8 @@ class Lab(db.Model):
             new_lab = Lab(uuid=uuid.uuid4(),
                           code=data['code'].upper(),
                           description=data['description'],
-                          start_ip_range=data['start_ip_range'],
-                          end_ip_range=data['end_ip_range'],
+                          start_ip_range=ipaddress.ip_address(data['start_ip_range']),
+                          end_ip_range=ipaddress.ip_address(data['end_ip_range']),
                           hosts_vcpus=data['hosts']['vcpus'],
                           hosts_memory=data['hosts']['memory'],
                           hosts_disk=data['hosts']['disk'])

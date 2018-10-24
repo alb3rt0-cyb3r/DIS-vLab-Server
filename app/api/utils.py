@@ -50,3 +50,12 @@ def token_required(f):
             return json_response('El token no es válido', 401)
         return f(current_user, *args, **kwargs)
     return decorated
+
+
+# Returns a list with the IPAddresses included in the range
+def ip_range_to_list(start, end):
+    ip_set = []
+    while start <= end:
+        ip_set.append(start)
+        start += 1
+    return ip_set
