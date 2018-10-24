@@ -1,6 +1,7 @@
 from app.api.utils import *
 from app.models import *
 from app.core import app
+import libvirt
 
 
 # ======================================================================================================================
@@ -66,8 +67,8 @@ def get_host_details(conn):
                cores_per_socket=host_info[6],
                threads_per_core=host_info[7])
 
-    mem_total = round(host_info[1] / 1024, 2)
-    mem_free = round(conn.getFreeMemory() / 1024000000, 2)
+    mem_total = round(host_info[1] / pow(10, 3), 2)  # MB to GB
+    mem_free = round(conn.getFreeMemory() / pow(10, 9), 2)  # Bytes to GB
     mem_used = round(mem_total - mem_free, 2)
     mem_load = round((mem_used * 100) / mem_total)
     memory = dict(total=mem_total, free=mem_free, used=mem_used, load=mem_load)

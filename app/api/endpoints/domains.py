@@ -4,7 +4,6 @@ import subprocess
 import libvirt
 import time
 
-# TODO - Use singleton pattern to have global libvirt connection
 # ======================================================================================================================
 # ==========> DOMAINS METHODS <=========================================================================================
 # ======================================================================================================================
@@ -17,10 +16,12 @@ def create_domain(cu):
     try:
         data = request.json
         cmd = ['virt-install',
+               '--connect', app.config['LOCAL_QEMU_URI'],
                '--name', data['name'],
                '--memory', str(data['memory']),
                '--vcpus', str(data['vcpus']),
-               '--os-variant', data['os_variant']]
+               '--os-variant', data['os_variant'],
+               '--noautoconsole']
         if data['graphics']['vnc']:
             cmd.append('--graphics')
             cmd.append('vnc,listen='+data['graphics']['listen']+',password='+data['graphics']['password'])
@@ -72,8 +73,8 @@ def get_all_domains(cu, conn=None):
             uuid = dom.UUIDString()
             name = dom.name()
             os_type = dom.OSType()
-            total_memory = round(dom.info()[1] / 1024, 2)
-            used_memory = "-" if not is_active else round(dom.memoryStats()['rss'] / 1024, 2)
+            total_memory = round(dom.info()[1] / 1024, 2)  # KByte to MByte
+            used_memory = "-" if not is_active else round(dom.info()[2] / 1024, 2)  # KByte to MByte
             memory = dict(total=total_memory, used=used_memory)
             vcpus = dom.info()[3]
             state = dom.info()[0]
@@ -114,19 +115,26 @@ def update_domain(cu, domain_name):
 @app.route('/api/domains/<domain_uuid>', methods=['DELETE'])
 @token_required
 def delete_domain(cu, domain_uuid):
-    delete_disks = True
-    # delete_disks = request.json['delete_disks']
-    conn = libvirt.open(app.config['LOCAL_QEMU_URI'])
-    domain = conn.lookupByUUIDString(domain_uuid)
-    if delete_disks:
-        xml = ET.fromstring(domain.XMLDesc())
-        devices = xml.findall('devices/disk')
-        for d in devices:
-            if d.get('device') == 'disk':
-                file_path = d.find('source').get('file')
-                subprocess.check_call(['rm', '-f', file_path])
-    domain.undefine()
-    return json_response('Dominio eliminado correctamente', 200)
+    try:
+        delete_disks = True
+        # delete_disks = request.json['delete_disks']
+        conn = libvirt.open(app.config['LOCAL_QEMU_URI'])
+        domain = conn.lookupByUUIDString(domain_uuid)
+        if delete_disks:
+            xml = ET.fromstring(domain.XMLDesc())
+            devices = xml.findall('devices/disk')
+            for d in devices:
+                if d.get('device') == 'disk':
+                    file_path = d.find('source').get('file')
+                    disk = conn.storageVolLookupByPath(file_path)
+                    disk.delete(libvirt.VIR_STORAGE_VOL_DELETE_NORMAL)
+        domain.undefine()
+        msg = 'Dominio eliminado correctamente'
+        code = 200
+    except Exception as e:
+        msg = 'Ha ocurrido un error al eliminar el dominio - ' + str(e)
+        code = 500
+    return json_response(msg, code)
 
 
 # START A DOMAIN DESCRIBED BY NAME
