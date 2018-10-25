@@ -57,7 +57,7 @@ The DVLS service will be started by a non-root user named as "dvls" for security
 ```bash
 # useradd dvls
 # passwd dvls
-# usermod -a -G nginx,libvirt dvls
+# usermod -a -G libvirt dvls
 ```
 
 #### Firewall
@@ -89,8 +89,6 @@ Description=uWSGI instance for DIS vLab Server
 After=network.target
 
 [Service]
-User=dvls
-Group=nginx
 WorkingDirectory=/usr/lib/dvls
 Environment="PATH=/usr/lib/dvls/venv/bin:/usr/bin"
 ExecStart=/usr/lib/dvls/venv/bin/uwsgi --ini dvls.ini
@@ -98,7 +96,7 @@ ExecStart=/usr/lib/dvls/venv/bin/uwsgi --ini dvls.ini
 [Install]
 WantedBy=multi-user.target
 ```
-Before **enable** and **start** dvls.service, change the owner of DVLS folder with: ```# chown -R dvls:dvls /usr/lib/dvls```
+Before **enable** and **start** dvls.service, change the owner of DVLS folder with: ```# chown dvls:dvls /usr/lib/dvls```
 
 ## Nginx configuration
 
