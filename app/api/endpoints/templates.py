@@ -51,7 +51,9 @@ def create_template(cu):
     subprocess.check_call(cmd)
 
     # Decontextualize the template and dumps XML
-    subprocess.check_call(['virt-sysprep', '-d', template_name])
+    subprocess.check_call(['virt-sysprep',
+                           '--connect', app.config['LOCAL_QEMU_URI'],
+                           '-d', template_name])
     template_xml = app.config['TEMPLATE_DEFINITIONS_DIR'] + template_name + '.xml'
     subprocess.check_call(['virsh', 'dumpxml', template_name], stdout=open(template_xml, 'w'))
 
@@ -72,10 +74,9 @@ def create_template(cu):
                              images_path=template_images_path))
         msg = "La plantilla se ha generado correctamente"
         code = 200
-    except Exception:
-        msg = "Ha ocurrido un error al generar la plantilla"
+    except Exception as e:
+        msg = "Ha ocurrido un error al generar la plantilla - " + str(e)
         code = 400
-
     return json_response(msg, code)
 
 

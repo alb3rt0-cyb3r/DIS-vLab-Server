@@ -11,11 +11,11 @@ import uuid
 class Config(db.Model):
     __tablename__ = 'config'
     id = db.Column(db.Integer, primary_key=True)
-    local_qemu_uri = db.Column(db.String(255), nullable=False, default='qemu:///system')
-    domain_images_dir = db.Column(db.String(255), nullable=False, default='/var/lib/libvirt/images/')
-    template_images_dir = db.Column(db.String(255), nullable=False, default='/var/lib/libvirt/images/templates/')
-    domain_definitions_dir = db.Column(db.String(255), nullable=False, default='/etc/libvirt/qemu/')
-    template_definitions_dir = db.Column(db.String(255), nullable=False, default='/etc/libvirt/qemu/templates/')
+    local_qemu_uri = db.Column(db.String(255), nullable=False, default='qemu:///session')
+    domain_images_dir = db.Column(db.String(255), nullable=False, default='~/.local/share/libvirt/images/')
+    template_images_dir = db.Column(db.String(255), nullable=False, default='~/.local/share/libvirt/images/templates/')
+    domain_definitions_dir = db.Column(db.String(255), nullable=False, default='~/.config/libvirt/qemu/')
+    template_definitions_dir = db.Column(db.String(255), nullable=False, default='~/.config/libvirt/qemu/templates/')
     conn_user = db.Column(db.String(255), nullable=False, default='dvls')
 
     @staticmethod
