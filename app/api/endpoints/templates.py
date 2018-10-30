@@ -53,7 +53,7 @@ def create_template(cu):
     # Decontextualize the template and dumps XML
     subprocess.check_call(['virt-sysprep',
                            '--connect', app.config['LOCAL_QEMU_URI'],
-                           '-d', template_name])
+                           '--domain', template_name])
     template_xml = app.config['TEMPLATE_DEFINITIONS_DIR'] + template_name + '.xml'
     subprocess.check_call(['virsh', 'dumpxml', template_name], stdout=open(template_xml, 'w'))
 
