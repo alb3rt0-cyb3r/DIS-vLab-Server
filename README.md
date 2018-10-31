@@ -68,7 +68,7 @@ CentOS 7 has firewalld running, so you should add a rule for incoming HTTP or HT
 # firewall-cmd --add-service=https --permanent
 ```
 
-In addition, connections to manage the domains will be made through VNC, so it's recommended to open some standard ports:
+In addition, connections to manage the domains will be made through VNC, so it's necessary to open a range of default ports:
 ```bash
 # firewall-cmd --add-port=5900-5910/tcp --permanent
 ```
