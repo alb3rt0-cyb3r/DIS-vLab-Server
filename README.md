@@ -66,6 +66,15 @@ CentOS 7 has firewalld running, so you should add a rule for incoming HTTP or HT
 ```bash
 # firewall-cmd --add-service=http --permanent
 # firewall-cmd --add-service=https --permanent
+```
+
+In addition, connections to manage the domains will be made through VNC, so it's necessary to open a range of default ports:
+```bash
+# firewall-cmd --add-port=5900-5910/tcp --permanent
+```
+
+Finally, reload the rules:
+```bash
 # firewall-cmd --reload
 ```
 
@@ -128,7 +137,7 @@ Open your preferred browser and navigate via HTTP or HTTPS, depending of your co
 
 ## Troubleshooting
 
-You can get a 502 nginx error when accessing to web interface if you're using SELinux in enforcing mode. It happens due to wrong SELinux policy to use the dvls.sock. To fix that, you'll need to add the correct SELinux policy module. Once you get the error in browser, use ```audit2allow``` to generate the correct SELinux module. With CentOS 7 Minimal installation you should install ```policycoreutils-python``` to use it.
+You can get a 502 Nginx error when accessing to web interface if you're using SELinux in enforcing mode. It happens due to wrong SELinux policy to use the dvls.sock. To fix that, you'll need to add the correct SELinux policy module. Once you get the error in browser, use ```audit2allow``` to generate the correct SELinux module. With CentOS 7 Minimal installation you should install ```policycoreutils-python``` to use it.
 ```bash
 # grep nginx /var/log/audit/audit.log | audit2allow -M nginx
 # semodule -i nginx.pp
