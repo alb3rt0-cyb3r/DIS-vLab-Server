@@ -24,7 +24,7 @@ def add_host(cu):
 @app.route('/api/hosts', methods=['GET'])
 @token_required
 def get_hosts(cu):
-    hosts = Host.all()
+    hosts = Host.get()
     return json_response([h.to_dict() for h in hosts], 200)
 
 

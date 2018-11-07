@@ -65,6 +65,19 @@ def get_labs(cu):
     return json_response(msg, code)
 
 
+@app.route('/api/labs/<lab_uuid>', methods=['GET'])
+@token_required
+def get_lab(cu, lab_uuid):
+    try:
+        lab = Lab.get(lab_uuid)
+        msg = lab.to_dict()
+        code = 200
+    except Exception as e:
+        msg = 'Ha ocurrido un error al obtener el laboratorio - ' + str(e)
+        code = 500
+    return json_response(msg, code)
+
+
 @app.route('/api/labs/<lab_uuid>', methods=['DELETE'])
 @token_required
 def delete_lab(cu, lab_uuid):

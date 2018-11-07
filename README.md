@@ -71,8 +71,8 @@ CentOS 7 has firewalld running, so you should add a rule for incoming HTTP or HT
 
 #### PolicyKit
 
-By default, all non-root users that be part of libvirt group have privileges to manage and use libvirt. You can find that rule file in **/usr/share/polkit-1/rules.d/50-libvirt.rules**.
-
+By default, all non-root users that be part of libvirt group have privileges to manage and use libvirt. You can find that rule file in **/usr/share/polkit-1/rules.d/50-libvirt.rules**.<br>
+However, all resources handled by privileged connections will be owned by 'root' user and group, so, to use virt-sysprep, you need to add a PolicyKit action and rule
 #### Pluggable Authentication Modules
 
 DVLS uses a PAM Python library to authenticate the user against **/etc/shadow** file. So that it works correctly, you need to create a new PAM service called 'dvls': 

@@ -50,12 +50,14 @@ def create_template(cu):
         cmd.append(template_image_path)
     subprocess.check_call(cmd)
 
-    # Decontextualize the template and dumps XML
-    subprocess.check_call(['virt-sysprep',
+    # Decontextualize the template and dumps XML --> USING POLICYKIT WITH 'virt-sysprep'
+    subprocess.check_call(['pkexec', '/usr/bin/virt-sysprep',
                            '--connect', app.config['LOCAL_QEMU_URI'],
                            '--domain', template_name])
     template_xml = app.config['TEMPLATE_DEFINITIONS_DIR'] + template_name + '.xml'
-    subprocess.check_call(['virsh', 'dumpxml', template_name], stdout=open(template_xml, 'w'))
+    subprocess.check_call(['virsh',
+                           '--connect', app.config['LOCAL_QEMU_URI'],
+                           'dumpxml', template_name], stdout=open(template_xml, 'w'))
 
     # Delete base domain (and disks?) --> TODO - Make it in an option inside wizard
     # domain.undefine()

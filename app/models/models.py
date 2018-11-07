@@ -13,9 +13,9 @@ class Config(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     local_qemu_uri = db.Column(db.String(255), nullable=False, default='qemu:///system')
     domain_images_dir = db.Column(db.String(255), nullable=False, default='/var/lib/libvirt/images/')
-    template_images_dir = db.Column(db.String(255), nullable=False, default='/var/lib/libvirt/images/templates/')
+    template_images_dir = db.Column(db.String(255), nullable=False, default='/var/lib/dvls/images/')
     domain_definitions_dir = db.Column(db.String(255), nullable=False, default='/etc/libvirt/qemu/')
-    template_definitions_dir = db.Column(db.String(255), nullable=False, default='/etc/libvirt/qemu/templates/')
+    template_definitions_dir = db.Column(db.String(255), nullable=False, default='/var/lib/dvls/qemu/')
     conn_user = db.Column(db.String(255), nullable=False, default='dvls')
 
     @staticmethod
