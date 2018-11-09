@@ -70,7 +70,7 @@ class Lab(db.Model):
     __tablename__ = 'labs'
     uuid = db.Column(UUIDType(binary=False), primary_key=True, default=uuid.uuid4())
     code = db.Column(db.String(64), unique=True, nullable=False)
-    description = db.Column(db.String(255), nullable=False)
+    description = db.Column(db.Text, nullable=False)
     start_ip_range = db.Column(IPAddressType, unique=True, nullable=False)
     end_ip_range = db.Column(IPAddressType, unique=True, nullable=False)
     hosts_vcpus = db.Column(db.Integer, nullable=False)
@@ -226,7 +226,7 @@ class Host(db.Model):
     def to_dict(self):
         return dict(uuid=str(self.uuid),
                     code=self.code,
-                    ip_address=self.ip_address,
+                    ip_address=self.ip_address.compressed,
                     conn_user=self.conn_user,
                     lab_id=self.lab.id)
 

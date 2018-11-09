@@ -2,6 +2,7 @@ import subprocess
 import paramiko
 import libvirt
 import pickle
+import time
 from app.api.utils import *
 from app.models import *
 from app.core import app
@@ -54,10 +55,15 @@ def create_template(cu):
     subprocess.check_call(['pkexec', '/usr/bin/virt-sysprep',
                            '--connect', app.config['LOCAL_QEMU_URI'],
                            '--domain', template_name])
-    template_xml = app.config['TEMPLATE_DEFINITIONS_DIR'] + template_name + '.xml'
-    subprocess.check_call(['virsh',
-                           '--connect', app.config['LOCAL_QEMU_URI'],
-                           'dumpxml', template_name], stdout=open(template_xml, 'w'))
+    template_xml = str(app.config['TEMPLATE_DEFINITIONS_DIR'] + template_name + '.xml')
+    proc = subprocess.Popen(['virsh', '--connect', app.config['LOCAL_QEMU_URI'], 'dumpxml', template_name],
+                            stdout=subprocess.PIPE)
+    out = proc.stdout.read().decode('utf-8')
+    print(out)
+
+    file = open(str(template_xml), 'w')
+    file.write(out)
+    file.close()
 
     # Delete base domain (and disks?) --> TODO - Make it in an option inside wizard
     # domain.undefine()
@@ -111,7 +117,7 @@ def delete_template(cu, template_uuid):
     template = Template.get(template_uuid)
 
     for image_path in pickle.loads(template.images_path):
-        subprocess.check_call(['rm', '-f',  image_path])
+        subprocess.check_call(['rm', '-f', image_path])
     subprocess.check_call(['rm', '-f', template.xml_path])
     Template.delete(template)
     return json_response('Plantilla eliminada correctamente', 200)
@@ -127,7 +133,8 @@ def clone_template(cu, template_uuid):
         template = Template.get(template_uuid).to_dict()
         domain_name = request.json['domain_name']
         lab_uuid = request.json['lab_uuid']
-        hosts = (Lab.get(lab_uuid)).hosts
+        lab = Lab.get(lab_uuid)
+        hosts = lab.hosts
 
         cmd = ['virt-clone',
                '--connect', app.config['LOCAL_QEMU_URI'],
@@ -141,21 +148,25 @@ def clone_template(cu, template_uuid):
         ssh = paramiko.SSHClient()
         # Surrounds 'known_hosts' error
         ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+        if hosts.__len__() == 0:
+            msg = 'El laboratorio no tiene ningún host asociado'
+            code = 401
+            return json_response(msg, code)
         for h in hosts:
-            host = h.ip_addr
+            host = h.ip_address
             username = h.conn_user
+            print('--> host,username: ', host, ' -- ', username)
             # NO PASSWORD!! Server SSH key is previously distributed among lab PCs
             try:
-                ssh.connect(host, username=username)
+                ssh.connect(str(host), username=str(username))
+                # TODO - Study how to get ssh_stdout/ssh_stderror output
                 ssh_stdin, ssh_stdout, ssh_stderr = ssh.exec_command(' '.join(cmd))
                 msg = 'virt-clone llamado correctamente'
                 code = 200
             except paramiko.ssh_exception.AuthenticationException as e:
-                msg = 'Ha ocurrido un error al llamar a virt-clone: '+str(e)
+                msg = 'Ha ocurrido un error al llamar a virt-clone: ' + str(e)
                 code = 500
-            return json_response(msg, code)
-        msg = 'El laboratorio no tiene ningún host asociado'
-        code = 401
+            # ssh.close()
     except Exception as e:
         msg = 'Ha ocurrido un error inesperado - ' + str(e)
         code = 500
