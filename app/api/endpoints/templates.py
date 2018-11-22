@@ -19,6 +19,7 @@ def create_template(cu):
     domain_uuid = request.json['domain_uuid']
     template_name = request.json['template_name']
     template_description = request.json['template_description']
+    do_sysprep = request.json['do_sysprep']
 
     # Check domain state
     conn = libvirt.open(app.config['LOCAL_QEMU_URI'])
@@ -51,10 +52,11 @@ def create_template(cu):
         cmd.append(template_image_path)
     subprocess.check_call(cmd)
 
-    # Decontextualize the template and dumps XML --> USING POLICYKIT WITH 'virt-sysprep'
-    subprocess.check_call(['pkexec', '/usr/bin/virt-sysprep',
-                           '--connect', app.config['LOCAL_QEMU_URI'],
-                           '--domain', template_name])
+    if do_sysprep:
+        # Decontextualize the template and dumps XML --> USING POLICYKIT WITH 'virt-sysprep'
+        subprocess.check_call(['pkexec', '/usr/bin/virt-sysprep',
+                               '--connect', app.config['LOCAL_QEMU_URI'],
+                               '--domain', template_name])
     template_xml = str(app.config['TEMPLATE_DEFINITIONS_DIR'] + template_name + '.xml')
     proc = subprocess.Popen(['virsh', '--connect', app.config['LOCAL_QEMU_URI'], 'dumpxml', template_name],
                             stdout=subprocess.PIPE)
