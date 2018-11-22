@@ -5,7 +5,7 @@ import os
 
 @app.route('/')
 def front_end():
-    index_path = os.path.join(app.static_folder, 'index.html')
+    index_path = os.path.join(app.static_folder, 'DIS-vLab-Client/index.html')
     return send_file(index_path)
 
 
@@ -20,5 +20,5 @@ def route_frontend(path):
         return send_file(file_path)
     # ...or should be handled by the SPA's "router" in front end
     else:
-        index_path = os.path.join(app.static_folder, 'index.html')
+        index_path = os.path.join(app.static_folder, 'DIS-vLab-Client/index.html')
         return send_file(index_path)

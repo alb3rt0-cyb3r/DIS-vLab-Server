@@ -54,10 +54,17 @@ def get_host_details(conn):
     hostname = conn.getHostname()
 
     sys_info = ET.fromstring(conn.getSysinfo())
+    manufacturer = None
     model = None
     for entry in sys_info.find('system'):
-        if entry.get('name') == 'product':
+        if entry.get('name') == 'manufacturer':
+            manufacturer = entry.text
+        elif entry.get('name') == 'product':
             model = entry.text
+
+    system = dict(manufacturer=manufacturer,
+                  model=model,
+                  hostname=hostname)
 
     cpu = dict(arch=host_info[0],
                cpus=host_info[2],
@@ -67,6 +74,10 @@ def get_host_details(conn):
                cores_per_socket=host_info[6],
                threads_per_core=host_info[7])
 
+    for entry in sys_info.find('processor'):
+        if entry.get('name') == 'version':
+            cpu['model'] = entry.text
+
     mem_total = round(host_info[1] / pow(10, 3), 2)  # MB to GB
     mem_free = round(conn.getFreeMemory() / pow(10, 9), 2)  # Bytes to GB
     mem_used = round(mem_total - mem_free, 2)
@@ -75,4 +86,4 @@ def get_host_details(conn):
 
     domains = dict(total=len(conn.listAllDomains()), active=len(conn.listDomainsID()))
 
-    return dict(hostname=hostname, model=model, cpu=cpu, memory=memory, domains=domains)
+    return dict(system=system, cpu=cpu, memory=memory, domains=domains)
