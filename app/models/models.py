@@ -78,33 +78,74 @@ class Lab(db.Model):
     hosts_disk = db.Column(db.Integer, nullable=False)
     hosts = db.relationship('Host', backref='lab', lazy=True, cascade="all, delete-orphan")
 
-    @staticmethod
-    def create(data: dict):
-        try:
-            new_lab = Lab(uuid=uuid.uuid4(),
-                          code=data['code'].upper(),
-                          description=data['description'],
-                          start_ip_range=ipaddress.ip_address(data['start_ip_range']),
-                          end_ip_range=ipaddress.ip_address(data['end_ip_range']),
-                          hosts_vcpus=data['hosts']['vcpus'],
-                          hosts_memory=data['hosts']['memory'],
-                          hosts_disk=data['hosts']['disk'])
-            Lab.add(new_lab)
-            return new_lab
-        except KeyError or IntegrityError as e:
-            raise e
+    def __init__(self, data):
+        self.uuid = uuid.uuid4()
+        self.code = data['code'].upper()
+        self.description = data['description']
+        self.start_ip_range = ipaddress.ip_address(data['start_ip_range'])
+        self.end_ip_range = ipaddress.ip_address(data['end_ip_range'])
+        self.hosts_vcpus = data['hosts']['vcpus']
+        self.hosts_memory = data['hosts']['memory']
+        self.hosts_disk = data['hosts']['disk']
 
-    @staticmethod
-    def add(lab):
+    def save(self):
+        """Adds into database an existent laboratory
+
+        :return: None
+        """
         try:
-            db.session.add(lab)
+            db.session.add(self)
             db.session.commit()
         except KeyError or IntegrityError as e:
             db.session.rollback()
             raise e
 
+    def remove(self):
+        """Deletes from database an existent laboratory
+
+        :return: None
+        """
+        try:
+            db.session.delete(self)
+            db.session.commit()
+        except UnmappedInstanceError as e:
+            db.session.rollback()
+            raise e
+
+    def add_host(self, host):
+        """Appends into the laboratory a new host
+
+        :param host:
+        :return: None
+        """
+        if not self.has_host(host):
+            self.hosts.append(host)
+
+    def remove_host(self, host):
+        """Removes from database an existent host
+
+        :param host:
+        :return: None
+        """
+        if self.has_host(host):
+            self.hosts.remove(host)
+
+    def has_host(self, host):
+        """Checks if the host is appended in the laboratory
+
+        :param host:
+        :return: True or False
+        """
+        return True if host in self.hosts else False
+
     @staticmethod
     def get(lab_uuid=None):
+        """Gets a list with all laboratories if None lab_uuid is passed. If lab_uuid is present, it returns the
+        laboratory defined by lab_uuid
+
+        :param lab_uuid: UUID of the laboratory
+        :return:
+        """
         try:
             return Lab.query.get(lab_uuid) if lab_uuid else Lab.query.all()
         except Exception as e:
@@ -128,7 +169,6 @@ class Lab(db.Model):
                 self.hosts_disk = data['hosts']['disk']
         try:
             db.session.commit()
-            return self
         except Exception as e:
             db.session.rollback()
             raise e
@@ -153,17 +193,6 @@ class Lab(db.Model):
                                memory=self.hosts_memory,
                                disk=self.hosts_disk))
 
-    def append_host(self, host):
-        if not self.has_host(host):
-            self.hosts.append(host)
-
-    def remove_host(self, host):
-        if self.has_host(host):
-            self.hosts.remove(host)
-
-    def has_host(self, host):
-        return True if host in self.hosts else False
-
 
 class Host(db.Model):
     __tablename__ = 'hosts'
@@ -173,23 +202,15 @@ class Host(db.Model):
     conn_user = db.Column(db.String(64), nullable=False)
     lab_uuid = db.Column(UUIDType(binary=False), db.ForeignKey('labs.uuid'))
 
-    @staticmethod
-    def create(data: dict):
-        try:
-            new_host = Host(uuid=uuid.uuid4(),
-                            code=data['code'].upper(),
-                            ip_address=data['ip_address'],
-                            conn_user=data['conn_user'],
-                            lab_uuid=data['lab_uuid'])
-            Host.add(new_host)
-            return new_host
-        except Exception as e:
-            raise e
+    def __init__(self, data):
+        self.uuid = uuid.uuid4()
+        self.code = data['code'].upper()
+        self.ip_address = data['ip_address']
+        self.conn_user = data['conn_user']
 
-    @staticmethod
-    def add(host):
+    def save(self):
         try:
-            db.session.add(host)
+            db.session.add(self)
             db.session.commit()
         except KeyError or IntegrityError as e:
             db.session.rollback()
@@ -242,26 +263,18 @@ class Template(db.Model):
     xml_path = db.Column(db.String(255), nullable=False)
     images_path = db.Column(db.PickleType, nullable=False)
 
-    @staticmethod
-    def create(data: dict):
-        try:
-            new_template = Template(uuid=uuid.uuid4(),
-                                    name=data['name'],
-                                    description=data['description'],
-                                    vcpus=data['vcpus'],
-                                    # Kibibytes to Mebibytes rounded equivalent
-                                    memory=round(data['memory'] * 0.000976562),
-                                    xml_path=data['xml_path'],
-                                    images_path=pickle.dumps(data['images_path']))
-            Template.add(new_template)
-            return new_template
-        except Exception as e:
-            raise e
+    def __init__(self, data):
+        self.uuid = uuid.uuid4()
+        self.name = data['name']
+        self.description = data['description']
+        self.vcpus = data['vcpus']
+        self.memory = round(data['memory'] * 0.000976562)  # KiB to MiB
+        self.xml_path = data['xml_path']
+        self.images_path = pickle.dumps(data['images_path'])
 
-    @staticmethod
-    def add(host):
+    def save(self):
         try:
-            db.session.add(host)
+            db.session.add(self)
             db.session.commit()
         except KeyError or IntegrityError as e:
             db.session.rollback()

@@ -1,7 +1,6 @@
-from sqlalchemy.exc import IntegrityError
 from app.api.utils import *
 from app.models import *
-from app.core import app
+from app.core import app, logger
 
 
 # ======================================================================================================================
@@ -12,81 +11,44 @@ from app.core import app
 @app.route('/api/labs', methods=['POST'])
 @token_required
 def create_lab(cu):
-    # 1) Create a Lab
-    # 2) Create and add Hosts
+    logger.info('Añadiendo laboratorio')
     try:
-        lab = Lab.create(request.json)
-        msg = "Laboratorio añadido correctamente"
-        code = 200
-    except Exception as e:
-        if isinstance(e, KeyError):
-            msg = "Ha ocurrido un error al añadir el laboratorio - Faltan parámetros"
-            code = 400
-        elif isinstance(e, IntegrityError):
-            msg = "Ha ocurrido un error al añadir el laboratorio - Se ha violado una restricción de integridad"
-            code = 400
-        else:
-            msg = "Ha ocurrido un error al añadir el laboratorio - " + str(e)
-            code = 500
-        return json_response(msg, code)
-
-    try:
+        lab = Lab(request.json)
         ip_range = ip_range_to_list(lab.start_ip_range, lab.end_ip_range)
         for ip in ip_range:
             data = dict(code=lab.code+'_'+str(ip_range.index(ip)),
                         ip_address=ip,
                         conn_user='root',
                         lab_uuid=lab.uuid)
-            Host.create(data)
+            lab.add_host(Host(data))
+        lab.save()
+        return json_response()
     except Exception as e:
-        if isinstance(e, KeyError):
-            msg = "Ha ocurrido un error al añadir un host al laboratorio "+lab.code+" - Faltan parámetros"
-            code = 400
-        elif isinstance(e, IntegrityError):
-            msg = "Ha ocurrido un error al añadir un host al laboratorio "+lab.code+" - Se ha violado una " \
-                                                                                    "restricción de integridad"
-            code = 400
-        else:
-            msg = "Ha ocurrido un error al añadir un host al laboratorio "+lab.code+" - " + str(e)
-            code = 500
-    return json_response(msg, code)
+        logger.error('No se pudo añadir el laboratorio: %s', str(e))
+        return json_response(status=500)
 
 
 @app.route('/api/labs', methods=['GET'])
 @token_required
 def get_labs(cu):
+    logger.info('Obteniendo laboratorios')
     try:
         labs = Lab.get()
-        msg = [l.to_dict() for l in labs]
-        code = 200
+        data = [l.to_dict() for l in labs]
+        return json_response(data=data)
     except Exception as e:
-        msg = 'Ha ocurrido un error al obtener los laboratorios - ' + str(e)
-        code = 500
-    return json_response(msg, code)
-
-
-@app.route('/api/labs/<lab_uuid>', methods=['GET'])
-@token_required
-def get_lab(cu, lab_uuid):
-    try:
-        lab = Lab.get(lab_uuid)
-        msg = lab.to_dict()
-        code = 200
-    except Exception as e:
-        msg = 'Ha ocurrido un error al obtener el laboratorio - ' + str(e)
-        code = 500
-    return json_response(msg, code)
+        logger.error('No se pudo obtener los laboratorios: %s', str(e))
+        return json_response(status=500)
 
 
 @app.route('/api/labs/<lab_uuid>', methods=['DELETE'])
 @token_required
 def delete_lab(cu, lab_uuid):
-    lab = Lab.get(lab_uuid)
+    logger.info('Eliminando laboratorio')
     try:
+        lab = Lab.get(lab_uuid)
         Lab.delete(lab)
-        msg = "Laboratorio eliminado correctamente"
-        code = 200
+        return json_response()
     except Exception as e:
-        msg = "No existe el laboratorio seleccionado - " + str(e)
-        code = 400
-    return json_response(msg, code)
+        logger.error('No se pudo eliminar el laboratorio seleccionado: %s', str(e))
+        return json_response(status=500)

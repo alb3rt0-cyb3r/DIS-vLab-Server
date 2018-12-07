@@ -1,6 +1,6 @@
 from app.api.utils import *
 from app.models import *
-from app.core import app
+from app.core import app, logger
 import libvirt
 
 
@@ -11,42 +11,38 @@ import libvirt
 @app.route('/api/hosts', methods=['POST'])
 @token_required
 def add_host(cu):
+    logger.info('Añadiendo host')
     try:
-        Host.create(request.json)
-        msg = 'Host añadido correctamente'
-        code = 200
+        host = Host(request.json)
+        host.save()
+        return json_response()
     except Exception as e:
-        msg = 'Ha ocurrido un error al añadir el host' + str(e)
-        code = 500
-    return json_response(msg, code)
+        logger.error('No se ha podido añadir el host: %s', str(e))
+        return json_response(status=500)
 
 
 @app.route('/api/hosts', methods=['GET'])
 @token_required
 def get_hosts(cu):
-    hosts = Host.get()
-    return json_response([h.to_dict() for h in hosts], 200)
-
-
-@app.route('/api/hosts/<host_uuid>', methods=['GET'])
-@token_required
-def get_host(cu, host_uuid):
-    host = Host.get(host_uuid)
-    conn = libvirt.open('qemu+ssh://'+host.user+'@'+host.hostname+'/system?socket=/var/run/libvirt/libvirt-sock')
-    msg = get_host_details(conn)
-    conn.close()
-    code = 200
-    return json_response(msg, code)
+    logger.info('Obteniendo los hosts')
+    try:
+        hosts = Host.get()
+        return json_response(data=[h.to_dict() for h in hosts])
+    except Exception as e:
+        logger.error('No se han podido obtener los hosts: %s', str(e))
+        return json_response(status=500)
 
 
 @app.route('/api/hosts/<host_uuid>', methods=['DELETE'])
 @token_required
 def delete_host(cu, host_uuid):
-    host = Host.get(host_uuid)
-    Host.delete(host)
-    msg = 'Host eliminado correctamente'
-    code = 200
-    return json_response(msg, code)
+    logger.info('Eliminando host %s', host_uuid)
+    try:
+        host = Host.get(host_uuid)
+        Host.delete(host)
+        return json_response()
+    except Exception as e:
+        logger.error('No se ha podido eliminar el host %s: %s', host_uuid, str(e))
 
 
 def get_host_details(conn):
